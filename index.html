@@ -10,6 +10,7 @@ SECURITY:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SIASEM · Sistem Informasi Absensi Generus</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -250,6 +251,7 @@ h1,h2,h3{letter-spacing:-.02em;}
             <div id="login-error" class="error-msg">Username atau Password salah!</div>
             <input type="text" id="login-username" placeholder="Username">
             <input type="password" id="login-password" placeholder="Password">
+            <div class="cf-turnstile" data-sitekey="0x4AAAAAAESHOiCYIMO0TCDO" style="margin-bottom:13px;"></div>
             <button onclick="doLogin()">Masuk</button>
             <button id="siasem-cloud-open" type="button" style="margin-top:12px;width:100%;cursor:pointer;position:relative;z-index:100001;" onclick="openPreloginCloud();">☁️ Pengaturan Google Apps Script</button>
             
@@ -895,6 +897,15 @@ h1,h2,h3{letter-spacing:-.02em;}
                 return;
             }
 
+            const turnstileToken = (typeof turnstile !== 'undefined') ? turnstile.getResponse() : '';
+            if (!turnstileToken) {
+                if (err) {
+                    err.textContent = 'Selesaikan verifikasi keamanan terlebih dahulu.';
+                    err.style.display = 'block';
+                }
+                return;
+            }
+
             try {
                 const response = await fetch(scriptUrl, {
                     method: 'POST',
@@ -903,7 +914,8 @@ h1,h2,h3{letter-spacing:-.02em;}
                         token: API_TOKEN,
                         action: 'login',
                         username: username,
-                        password: password
+                        password: password,
+                        turnstileToken: turnstileToken
                     })
                 });
 
@@ -920,6 +932,7 @@ h1,h2,h3{letter-spacing:-.02em;}
                     scheduleAutoLogout();
                     showApp();
                 } else {
+                    if (typeof turnstile !== 'undefined') turnstile.reset();
                     if (err) {
                         err.textContent = result.error || 'Username atau password salah.';
                         err.style.display = 'block';
@@ -927,6 +940,7 @@ h1,h2,h3{letter-spacing:-.02em;}
                 }
             } catch (e) {
                 console.error(e);
+                if (typeof turnstile !== 'undefined') turnstile.reset();
                 if (err) {
                     err.textContent = 'Gagal terhubung ke server login. Periksa URL Web App /exec.';
                     err.style.display = 'block';
