@@ -253,10 +253,6 @@ h1,h2,h3{letter-spacing:-.02em;}
             <input type="password" id="login-password" placeholder="Password">
             <div class="cf-turnstile" data-sitekey="0x4AAAAAAESHOiCYIMO0TCDO" style="margin-bottom:13px;"></div>
             <button onclick="doLogin()">Masuk</button>
-            <button id="siasem-cloud-open" type="button" style="margin-top:12px;width:100%;cursor:pointer;position:relative;z-index:100001;" onclick="openPreloginCloud();">☁️ Pengaturan Google Apps Script</button>
-            
-            <div id="prelogin-cloud-status" style="margin-top:10px;font-size:12px;color:#66736d;"></div>
-            
         </div>
     </div>
 
@@ -270,7 +266,7 @@ h1,h2,h3{letter-spacing:-.02em;}
                     <h1 id="user-greeting">Halo, Guru</h1>
                     <div class="sub">SIASEM · Sistem Informasi Absensi Generus</div>
                 </div>
-                <span id="cloud-status" class="sync-status">Offline Mode</span>
+                <span id="cloud-status" class="sync-status online">☁️ Terhubung</span>
             </div>
             <button class="btn-logout" onclick="doLogout()">Logout</button>
         </header>
@@ -295,9 +291,9 @@ h1,h2,h3{letter-spacing:-.02em;}
                         <div class="form-group" style="margin-bottom:0;">
                             <label>Kelas</label>
                             <select id="abs-kelas" onchange="renderAbsensiInput()">
-                                <option value="caberawit">Caberawit</option>
-                                <option value="praremaja">Pra Remaja</option>
-                                <option value="remaja">Remaja</option>
+                                <option value="Caberawit">Caberawit</option>
+                                <option value="Pra Remaja">Pra Remaja</option>
+                                <option value="Remaja">Remaja</option>
                             
 <option value="Pra Nikah">Pra Nikah</option>
 </select>
@@ -320,9 +316,9 @@ h1,h2,h3{letter-spacing:-.02em;}
                         <div class="form-group" style="margin-bottom:0;">
                             <label>Kelas</label>
                             <select id="abs-kelas-lap" onchange="renderAbsensiLaporan()">
-                                <option value="caberawit">Caberawit</option>
-                                <option value="praremaja">Pra Remaja</option>
-                                <option value="remaja">Remaja</option>
+                                <option value="Caberawit">Caberawit</option>
+                                <option value="Pra Remaja">Pra Remaja</option>
+                                <option value="Remaja">Remaja</option>
                             
 <option value="Pra Nikah">Pra Nikah</option>
 </select>
@@ -348,9 +344,9 @@ h1,h2,h3{letter-spacing:-.02em;}
                         <div class="form-group">
                             <label>Pilih Kelas</label>
                             <select id="abs-kelas-kelola" onchange="renderKelolaMurid()">
-                                <option value="caberawit">Caberawit</option>
-                                <option value="praremaja">Pra Remaja</option>
-                                <option value="remaja">Remaja</option>
+                                <option value="Caberawit">Caberawit</option>
+                                <option value="Pra Remaja">Pra Remaja</option>
+                                <option value="Remaja">Remaja</option>
                             
 <option value="Pra Nikah">Pra Nikah</option>
 </select>
@@ -545,16 +541,9 @@ h1,h2,h3{letter-spacing:-.02em;}
             <!-- MODULE 4: SETTINGS (CLOUD SYNC) -->
             <div id="mod-setting" class="app-module no-print">
                 <div class="card">
-                    <h3 style="margin-top:0; color:var(--primary-dark); display:flex; align-items:center; gap:8px;">☁️ Pengaturan Sinkronisasi Google Sheets</h3>
-                    <p class="settings-note">Masukkan URL Web App dari Google Apps Script Anda agar data absensi, jurnal, dan kendali generus otomatis tersimpan ke Google Spreadsheet secara online.</p>
-
-                    <div class="form-group">
-                        <label>URL Google Apps Script Web App</label>
-                        <input type="text" id="set-script-url" placeholder="https://script.google.com/macros/s/.../exec">
-                    </div>
-                    <button class="btn btn-sync" onclick="saveSettings()">🔗 Simpan & Hubungkan</button>
-                    
-                    <div id="alert-setting" class="alert" style="margin-top:15px; display:none;">✅ URL berhasil disimpan! Fitur sinkronisasi aktif.</div>
+                    <h3 style="margin-top:0; color:var(--primary-dark); display:flex; align-items:center; gap:8px;">☁️ Status Sinkronisasi Google Sheets</h3>
+                    <p class="settings-note">Aplikasi ini tersambung otomatis ke server SIASEM (lewat Cloudflare Worker). URL Google Apps Script tidak lagi diatur dari sini demi keamanan.</p>
+                    <div class="sync-status online">☁️ Terhubung</div>
                 </div>
             </div>
 
@@ -614,7 +603,7 @@ h1,h2,h3{letter-spacing:-.02em;}
         // Semua data (murid, absensi, jurnal, kendali) TIDAK disimpan di localStorage.
         // Data ini hanya hidup di memori selama tab dibuka, dan selalu diambil
         // ulang dari Google Sheets lewat loadAppData() setelah login.
-        let dbMurid = { caberawit: [], praremaja: [], remaja: [] };
+        let dbMurid = { 'Caberawit': [], 'Pra Remaja': [], 'Remaja': [], 'Pra Nikah': [] };
         let dbAbsensi = {};
         let dbJurnal = [];
         let dbKendali = [];
@@ -633,13 +622,11 @@ h1,h2,h3{letter-spacing:-.02em;}
 
         // URL Google Apps Script bawaan aplikasi (tertanam di kode, otomatis tersambung
         // di device manapun, dan TIDAK disimpan/dibaca dari localStorage).
-        const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxotvhSpgCQhn-XWsVhRDZKPKwuFXWE9epLjBsZCbmLMn1oYhIV8O_BwPmuvOXrJGM6/exec';
-        let scriptUrl = DEFAULT_SCRIPT_URL;
-        const API_TOKEN = 'SIASEM-2026';
-
-        // GANTI PIN INI dengan PIN rahasia Anda sendiri sebelum dipakai.
-        // Hanya orang yang tahu PIN ini yang boleh mengubah URL Google Apps Script.
-        const SETTINGS_PIN = '170717';
+        // URL Apps Script & token API TIDAK LAGI disimpan di HTML. Semua request
+        // sekarang lewat Cloudflare Worker, yang menyimpan URL Apps Script dan
+        // token API sebagai rahasia server (env vars) — tidak pernah terlihat
+        // di HTML/browser. GANTI dengan URL Worker JURNAL kamu setelah deploy.
+        const WORKER_URL = 'https://jurnalsiasem.psudiningsih.workers.dev';
 
         // ============ AUTO LOGOUT KARENA TIDAK AKTIF ============
         // Default: logout otomatis setelah 30 menit tanpa aktivitas.
@@ -686,7 +673,7 @@ h1,h2,h3{letter-spacing:-.02em;}
             currentRole = null;
             sessionAuth = null;
             adminAuthCache = null;
-            dbMurid = { caberawit: [], praremaja: [], remaja: [] };
+            dbMurid = { 'Caberawit': [], 'Pra Remaja': [], 'Remaja': [], 'Pra Nikah': [] };
             dbAbsensi = {};
             dbJurnal = [];
             dbKendali = [];
@@ -714,18 +701,7 @@ h1,h2,h3{letter-spacing:-.02em;}
             });
         }
 
-        function verifySettingsPin() {
-            const pin = prompt('Masukkan PIN admin untuk membuka Pengaturan Google Apps Script:');
-            if (pin === null) return false; // batal
-            if (pin.trim() !== SETTINGS_PIN) {
-                alert('❌ PIN salah. Anda tidak diizinkan mengubah pengaturan ini.');
-                return false;
-            }
-            return true;
-        }
-
         function openSettingsGuarded(navEl) {
-            if (!verifySettingsPin()) return;
             switchModule('setting', navEl);
         }
 
@@ -746,16 +722,14 @@ h1,h2,h3{letter-spacing:-.02em;}
         }
 
         async function callAdminAction(action, extraFields) {
-            if (!scriptUrl) { alert('URL Google Apps Script belum diatur.'); return null; }
             if (!adminAuthCache) { alert('Sesi admin belum terverifikasi. Buka ulang menu User.'); return null; }
             try {
                 const body = Object.assign({
-                    token: API_TOKEN,
                     action: action,
                     adminUsername: adminAuthCache.username,
                     adminPassword: adminAuthCache.password
                 }, extraFields || {});
-                const res = await fetch(scriptUrl, {
+                const res = await fetch(WORKER_URL, {
                     method: 'POST',
                     headers: {'Content-Type': 'text/plain;charset=utf-8'},
                     body: JSON.stringify(body)
@@ -832,22 +806,16 @@ h1,h2,h3{letter-spacing:-.02em;}
 
         window.onload = function() {
             document.getElementById('login-page').style.display = 'flex';
-
-            document.getElementById('set-script-url').value = scriptUrl;
-            const preStatus = document.getElementById('prelogin-cloud-status');
-            if (preStatus) preStatus.textContent = scriptUrl ? '☁️ URL Google Apps Script sudah tersimpan' : '☁️ Belum terhubung';
-            checkCloudStatus();
             initAutoLogout();
         };
 
         async function loadAppData() {
-            if (!scriptUrl || !sessionAuth) return false;
+            if (!sessionAuth) return false;
             try {
-                const response = await fetch(scriptUrl, {
+                const response = await fetch(WORKER_URL, {
                     method: 'POST',
                     headers: {'Content-Type': 'text/plain;charset=utf-8'},
                     body: JSON.stringify({
-                        token: API_TOKEN,
                         action: 'getAppData',
                         authUsername: sessionAuth.username,
                         authPassword: sessionAuth.password
@@ -855,7 +823,7 @@ h1,h2,h3{letter-spacing:-.02em;}
                 });
                 const result = await response.json();
                 if (result.ok && result.data) {
-                    dbMurid = result.data.murid || { caberawit: [], praremaja: [], remaja: [] };
+                    dbMurid = result.data.murid || { 'Caberawit': [], 'Pra Remaja': [], 'Remaja': [], 'Pra Nikah': [] };
                     dbAbsensi = result.data.absensi || {};
                     dbJurnal = result.data.jurnal || [];
                     dbKendali = result.data.kendali || [];
@@ -889,14 +857,6 @@ h1,h2,h3{letter-spacing:-.02em;}
                 return;
             }
 
-            if (!scriptUrl) {
-                if (err) {
-                    err.textContent = 'Hubungkan SIASEM ke Google Apps Script terlebih dahulu.';
-                    err.style.display = 'block';
-                }
-                return;
-            }
-
             const turnstileToken = (typeof turnstile !== 'undefined') ? turnstile.getResponse() : '';
             if (!turnstileToken) {
                 if (err) {
@@ -907,11 +867,10 @@ h1,h2,h3{letter-spacing:-.02em;}
             }
 
             try {
-                const response = await fetch(scriptUrl, {
+                const response = await fetch(WORKER_URL, {
                     method: 'POST',
                     headers: {'Content-Type': 'text/plain;charset=utf-8'},
                     body: JSON.stringify({
-                        token: API_TOKEN,
                         action: 'login',
                         username: username,
                         password: password,
@@ -942,7 +901,7 @@ h1,h2,h3{letter-spacing:-.02em;}
                 console.error(e);
                 if (typeof turnstile !== 'undefined') turnstile.reset();
                 if (err) {
-                    err.textContent = 'Gagal terhubung ke server login. Periksa URL Web App /exec.';
+                    err.textContent = 'Gagal terhubung ke server. Coba lagi.';
                     err.style.display = 'block';
                 }
             }
@@ -964,7 +923,7 @@ h1,h2,h3{letter-spacing:-.02em;}
             currentRole = null;
             sessionAuth = null;
             adminAuthCache = null;
-            dbMurid = { caberawit: [], praremaja: [], remaja: [] };
+            dbMurid = { 'Caberawit': [], 'Pra Remaja': [], 'Remaja': [], 'Pra Nikah': [] };
             dbAbsensi = {};
             dbJurnal = [];
             dbKendali = [];
@@ -1016,73 +975,21 @@ h1,h2,h3{letter-spacing:-.02em;}
         function formatTgl(ds) { const d = new Date(ds); if(isNaN(d)) return ds; return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; }
         function formatBulan(ms) { if(!ms) return "Semua Bulan"; const m = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des']; const p = ms.split('-'); return `${m[parseInt(p[1])-1]} ${p[0]}`; }
 
-        // --- CLOUD SYNC LOGIC ---
-        function checkCloudStatus() {
-            const statusEl = document.getElementById('cloud-status');
-            if(scriptUrl && scriptUrl.startsWith('http')) {
-                statusEl.innerText = "☁️ Terhubung";
-                statusEl.classList.add('online');
-            } else {
-                statusEl.innerText = "Offline Mode";
-                statusEl.classList.remove('online');
-            }
-        }
-        
-        function openPreloginCloud() {
-            if (!verifySettingsPin()) return;
-            const modal = document.getElementById('prelogin-cloud-modal');
-            const input = document.getElementById('prelogin-script-url');
-            input.value = scriptUrl || '';
-            document.getElementById('prelogin-cloud-message').textContent = '';
-            modal.style.display = 'flex';
-        }
-
-        function closePreloginCloud() {
-            document.getElementById('prelogin-cloud-modal').style.display = 'none';
-        }
-
-        async function savePreloginCloud() {
-            if (!verifySettingsPin()) return;
-            const input = document.getElementById('prelogin-script-url');
-            const msg = document.getElementById('prelogin-cloud-message');
-            const url = input.value.trim();
-
-            if (!url || !url.startsWith('https://script.google.com/') || !url.endsWith('/exec')) {
-                msg.textContent = '❌ Masukkan URL Web App Google Apps Script yang benar dan berakhiran /exec.';
-                msg.style.color = '#b42318';
-                return;
-            }
-
-            scriptUrl = url;
-
-            msg.textContent = '✓ URL Google Apps Script diset untuk sesi ini. Silakan tutup dan login.';
-            msg.style.color = '#067647';
-            document.getElementById('prelogin-cloud-status').textContent = '☁️ URL Apps Script diset (sesi ini saja)';
-        }
-
-function saveSettings() {
-            if (!verifySettingsPin()) return;
-            scriptUrl = document.getElementById('set-script-url').value.trim();
-            checkCloudStatus();
-            document.getElementById('alert-setting').style.display = 'block';
-            setTimeout(() => document.getElementById('alert-setting').style.display = 'none', 3000);
-        }
-
         // Panggilan terautentikasi untuk semua aksi baca/tulis data murid,
         // absensi, jurnal, dan kendali. Password TIDAK disimpan ke disk,
         // hanya dikirim dari variabel sessionAuth yang ada di memori.
+        // Semua request lewat WORKER_URL — Worker yang menyimpan URL Apps
+        // Script & token API sebagai rahasia server.
         async function callDataAction(action, extraFields) {
-            if (!scriptUrl) { alert('URL Google Apps Script belum diatur.'); return null; }
             if (!sessionAuth) { alert('Sesi login tidak valid. Silakan login ulang.'); return null; }
             try {
                 const body = Object.assign({
-                    token: API_TOKEN,
                     action: action,
                     authUsername: sessionAuth.username,
                     authPassword: sessionAuth.password
                 }, extraFields || {});
 
-                const res = await fetch(scriptUrl, {
+                const res = await fetch(WORKER_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(body)
@@ -1098,30 +1005,6 @@ function saveSettings() {
                 console.error(e);
                 alert('Gagal terhubung ke server.');
                 return null;
-            }
-        }
-
-        async function testCloudConnection() {
-            const url = document.getElementById('set-script-url').value.trim();
-
-            if(!url || !url.startsWith('http')) {
-                alert('Masukkan URL Google Apps Script Web App terlebih dahulu.');
-                return;
-            }
-
-            try {
-                const response = await fetch(url, { method: 'GET' });
-                const data = await response.json();
-
-                if(data && data.ok) {
-                    scriptUrl = url;
-                    checkCloudStatus();
-                    alert('✅ Koneksi Google Sheets berhasil.');
-                } else {
-                    alert('❌ Web App merespons, tetapi bukan API SIASEM.');
-                }
-            } catch (e) {
-                alert('⚠️ Tes GET diblokir browser atau URL salah. Coba Simpan & Hubungkan lalu login untuk menguji sinkronisasi.');
             }
         }
 
@@ -1275,23 +1158,6 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 
 <script id="siasem-29-karakter-data">window.SIASEM_29_KARAKTER = ['Alim Faqih', 'Akhlaqul Karimah', 'Mandiri', 'Rukun', 'Kompak', 'Kerja Sama yang Baik', 'Jujur', 'Amanah', 'Mujhid Muzhid', 'Bersyukur', 'Mengagungkan', 'Mempersungguh', 'Berdoa', 'Benar', 'Kurup', 'Janji', 'Diqodar Nikmat Maka Bersyukur', 'Diqodar Musibah Maka Istirja', 'Diqodar Cobaan Maka Sabar', 'Diqodar Salah Maka Bertaubat', 'Yang Kuat Membantu yang Lemah', 'Yang Bisa Mengajar yang Tidak Bisa', 'Yang Lupa Diingatkan', 'Yang Salah Dinasehati dan Diarahkan Bertaubat', 'Bicara yang Baik, Pahit Madu, Papan Empan Adepan', 'Jujur, Percaya dan Dipercaya', 'Sabar, Keporo Ngalah, Rebutan Ngalah', 'Tidak Merusak Sesama Jamaah', 'Menjaga Perasaan dan Kehormatan'];</script>
-
-    <div id="prelogin-cloud-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-        <div style="background:#fff;border-radius:18px;max-width:520px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);">
-            <h3 style="margin-top:0;">☁️ Hubungkan Google Apps Script</h3>
-            <p style="font-size:13px;color:#66736d;">
-                Pengaturan ini tersedia <b>sebelum login</b> karena login SIASEM membutuhkan koneksi ke Google Apps Script.
-            </p>
-            <label style="display:block;margin:12px 0 6px;">URL Web App Google Apps Script</label>
-            <input id="prelogin-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #ccd7d1;border-radius:10px;">
-            <div id="prelogin-cloud-message" style="margin-top:10px;font-size:13px;"></div>
-            <div style="display:flex;gap:10px;margin-top:15px;">
-                <button type="button" onclick="savePreloginCloud()">Simpan & Tes</button>
-                <button type="button" onclick="closePreloginCloud()">Tutup</button>
-            </div>
-        </div>
-    </div>
-
 
 
 </body>
