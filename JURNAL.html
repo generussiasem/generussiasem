@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<!--
+SECURITY:
+- Username/password guru TIDAK disimpan di HTML.
+- Login harus diverifikasi oleh Google Apps Script melalui Sheet Users.
+- Jangan menambahkan daftar username/password ke file HTML.
+-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SIASEM · Sistem Informasi Absensi Generus</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0b6e5c;
+            --primary-dark: #084c40;
+            --primary-light: #e6f2ee;
+            --accent: #d3a017;
+            --accent-dark: #a97f0e;
+            --accent-light: #fbf1d9;
+            --success: #1a9c6b;
+            --info: #3b7dd8;
+            --danger: #d6534a;
+            --bg: #f6f2e7;
+            --card: #ffffff;
+            --text: #1f2b28;
+            --text-muted: #6f7a73;
+            --border: #e7e1d0;
+            --radius: 16px;
+        }
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        h1, h2, h3, .brand-font, .nav-item, .top-tab-btn, .login-box h2 { font-family: 'Poppins', 'Segoe UI', sans-serif; }
+
+        body {
+            margin: 0; padding: 0; color: var(--text); font-size: 14px; padding-bottom: 84px;
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(circle at 100% 0%, rgba(11,110,92,0.06) 0%, transparent 45%),
+                radial-gradient(circle at 0% 100%, rgba(211,160,23,0.08) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* ============ Islamic geometric star motif (signature element) ============ */
+        .motif-bg {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.16' stroke-width='1.1'%3E%3Cpath d='M42 4 L54 22 L76 22 L60 36 L66 58 L42 46 L18 58 L24 36 L8 22 L30 22 Z'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 84px 84px;
+        }
+
+        /* ============ LOGIN ============ */
+        #login-page {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(155deg, var(--primary-dark) 0%, var(--primary) 55%, #0d8a72 100%);
+            display: flex; justify-content: center; align-items: center; z-index: 9999;
+            padding: 20px;
+        }
+        .login-box {
+            background: var(--card); padding: 34px 28px 28px; border-radius: 22px; width: 100%; max-width: 380px;
+            box-shadow: 0 25px 50px rgba(4, 40, 33, 0.35); text-align: center; position: relative; overflow: hidden;
+            border-top: 5px solid var(--accent);
+        }
+        .login-logo {
+            width: 62px; height: 62px; margin: 0 auto 14px; border-radius: 18px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            display: flex; align-items: center; justify-content: center; font-size: 30px;
+            box-shadow: 0 8px 18px rgba(11,110,92,0.35);
+        }
+        .login-box h2 { margin: 0 0 4px; color: var(--primary-dark); font-size: 22px; font-weight: 800; letter-spacing: 0.3px; }
+        .login-tag { display: inline-block; background: var(--accent-light); color: var(--accent-dark); font-weight: 700; font-size: 11px; letter-spacing: 1.2px; padding: 4px 10px; border-radius: 20px; margin-bottom: 14px; text-transform: uppercase; }
+        .login-box p.desc { font-size: 13px; color: var(--text-muted); margin: 0 0 20px; line-height: 1.5; }
+        .login-box input {
+            width: 100%; padding: 14px 16px; margin-bottom: 13px; border: 1.5px solid var(--border); border-radius: 12px;
+            font-size: 15px; background: #faf9f5; outline: none; transition: 0.2s;
+        }
+        .login-box input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(11,110,92,0.12); }
+        .login-box button {
+            width: 100%; padding: 15px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white;
+            border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 0.3px;
+            box-shadow: 0 10px 20px rgba(11,110,92,0.28); transition: transform 0.15s;
+        }
+        .login-box button:active { transform: scale(0.98); }
+        .error-msg { color: var(--danger); font-size: 13px; margin-bottom: 10px; display: none; font-weight: 600; }
+
+        /* ============ HEADER ============ */
+        .app-header {
+            background: linear-gradient(120deg, var(--primary-dark), var(--primary) 70%);
+            color: white; padding: 16px 18px; display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        }
+        .app-header.motif-bg { background-blend-mode: overlay; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-logo {
+            width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,0.16);
+            display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0;
+        }
+        .app-header h1 { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.25; }
+        .app-header .sub { font-size: 10.5px; opacity: 0.85; font-weight: 500; letter-spacing: 0.3px; }
+        .btn-logout {
+            background: rgba(255,255,255,0.14); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 7px 14px;
+            border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s;
+        }
+        .btn-logout:hover { background: var(--danger); border-color: var(--danger); }
+
+        /* ============ BOTTOM NAV ============ */
+        .bottom-nav {
+            position: fixed; bottom: 12px; left: 12px; right: 12px; background: var(--card);
+            display: flex; box-shadow: 0 10px 30px rgba(8,50,42,0.18); z-index: 100; border-radius: 18px; padding: 6px;
+            border: 1px solid var(--border);
+        }
+        .nav-item {
+            flex: 1; text-align: center; padding: 9px 4px; color: var(--text-muted); font-size: 10.5px; font-weight: 700;
+            cursor: pointer; border-radius: 13px; transition: 0.25s; letter-spacing: 0.2px;
+        }
+        .nav-item i { display: block; font-size: 19px; margin-bottom: 3px; font-style: normal; }
+        .nav-item.active { color: white; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); box-shadow: 0 6px 14px rgba(11,110,92,0.35); }
+
+        .app-module { display: none; }
+        .app-module.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .container { padding: 16px; max-width: 720px; margin: 0 auto; }
+        .card { background: var(--card); border-radius: var(--radius); padding: 18px; margin-bottom: 15px; box-shadow: 0 3px 14px rgba(31,43,40,0.06); border: 1px solid var(--border); }
+
+        .top-tabs { display: flex; background: var(--card); margin-bottom: 15px; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(31,43,40,0.06); border: 1px solid var(--border); padding: 4px; gap: 4px; }
+        .top-tab-btn { flex: 1; padding: 11px 5px; background: none; border: none; font-size: 11.5px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 10px; transition: 0.2s; letter-spacing: 0.2px; }
+        .top-tab-btn.active { color: white; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+        .sub-section { display: none; }
+        .sub-section.active { display: block; animation: fadeIn 0.25s ease; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: 700; margin-bottom: 6px; font-size: 12.5px; color: var(--primary-dark); letter-spacing: 0.2px; }
+        input[type="date"], input[type="text"], select, textarea, input[type="month"], input[type="password"] {
+            width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px;
+            background: #faf9f5; outline: none; transition: 0.2s; color: var(--text);
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); background: #ffffff; box-shadow: 0 0 0 3px rgba(11,110,92,0.1); }
+        textarea { resize: vertical; min-height: 80px; }
+
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 11px; font-size: 15px; font-weight: 700; color: white; background: var(--primary); cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; letter-spacing: 0.2px; }
+        .btn:active { transform: scale(0.985); }
+        .btn-save { background: linear-gradient(135deg, var(--success), #0f8558); box-shadow: 0 8px 18px rgba(26,156,107,0.28); }
+        .btn-print { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); margin-bottom: 15px; box-shadow: 0 8px 18px rgba(11,110,92,0.25); }
+        .btn-danger { background: var(--danger); padding: 6px 12px; font-size: 12px; width: auto; border-radius: 7px; }
+        .btn-sync { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); box-shadow: 0 8px 18px rgba(211,160,23,0.3); }
+
+        .alert { padding: 12px; background: var(--primary-light); color: var(--primary-dark); border-radius: 10px; margin-bottom: 15px; font-size: 13px; text-align: center; display: none; font-weight: 700; border: 1px solid #bfe0d6; }
+
+        .table-responsive { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+        table { width: 100%; min-width: 500px; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 11px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { background: var(--primary-light); font-weight: 700; color: var(--primary-dark); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.3px; }
+        tr:hover { background: #faf9f5; }
+        .text-center { text-align: center; }
+
+        .status-options { display: flex; gap: 8px; }
+        .status-options label { flex: 1; cursor: pointer; }
+        .status-options input { display: none; }
+        .status-options span { display: block; text-align: center; padding: 9px 0; border-radius: 9px; background: #f8f7f2; border: 1.5px solid var(--border); font-weight: 700; font-size: 13px; color: var(--text-muted); transition: 0.2s; }
+        .status-options input:checked + .opt-h { background: var(--success); color: white; border-color: var(--success); box-shadow: 0 4px 10px rgba(26,156,107,0.3); }
+        .status-options input:checked + .opt-s { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(211,160,23,0.3); }
+        .status-options input:checked + .opt-i { background: var(--info); color: white; border-color: var(--info); box-shadow: 0 4px 10px rgba(59,125,216,0.3); }
+        .status-options input:checked + .opt-a { background: var(--danger); color: white; border-color: var(--danger); box-shadow: 0 4px 10px rgba(214,83,74,0.3); }
+        .progress-bar-container { width: 100%; background: #eee6d3; height: 6px; border-radius: 3px; margin-top: 4px; }
+        .progress-bar { height: 100%; border-radius: 3px; }
+
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; color: white; display: inline-block; }
+        .badge-success { background: var(--success); }
+        .badge-warning { background: var(--accent); }
+        .badge-danger { background: var(--danger); }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+
+        .sync-status { font-size: 10.5px; color: white; background: rgba(255,255,255,0.16); padding: 4px 10px; border-radius: 20px; margin-left: 10px; font-weight: 600; border: 1px solid rgba(255,255,255,0.25); }
+        .sync-status.online { background: var(--accent); border-color: var(--accent); color: #3a2c02; }
+
+        .settings-note { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+        @media print {
+            body { background: white; color: black; padding: 0; font-size: 11pt; }
+            .no-print, .app-header, .bottom-nav, .top-tabs { display: none !important; }
+            .container { padding: 0; margin: 0; }
+            .card { box-shadow: none; border: none; padding: 0; margin-bottom: 20px; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 20px; border-bottom: 2px solid black; padding-bottom: 10px; }
+            .print-header h2 { margin: 0; padding: 0; font-size: 16pt; text-transform: uppercase; }
+            .print-header p { margin: 5px 0 0 0; font-size: 12pt; }
+            .table-responsive { border: none; overflow: visible; }
+            table { width: 100%; border: 1px solid #000; }
+            th, td { border: 1px solid #000; padding: 6px; }
+            th { background: #e5e7eb !important; -webkit-print-color-adjust: exact; }
+            .col-aksi { display: none; }
+            .badge { padding: 0; color: black; border: none; font-weight: normal; background: none; }
+        }
+        .print-header { display: none; }
+    </style>
+
+<style id="siasem-modern-style">
+:root{
+  --primary:#1f7a5c;
+  --primary-dark:#14543f;
+  --accent:#e8b04b;
+  --bg:#f4f7f5;
+  --card:#ffffff;
+  --text:#20332c;
+  --muted:#718078;
+  --border:#dfe8e3;
+  --shadow:0 10px 30px rgba(20,84,63,.10);
+}
+body{background:linear-gradient(135deg,#f4f8f6 0%,#eef5f1 100%)!important;color:var(--text);}
+.card,.panel,.box,.content-card{border:1px solid var(--border)!important;border-radius:18px!important;box-shadow:var(--shadow)!important;}
+button,.btn{border-radius:12px!important;transition:.2s ease!important;}
+button:hover,.btn:hover{transform:translateY(-1px);filter:brightness(1.03);}
+input,select,textarea{border:1px solid var(--border)!important;border-radius:11px!important;background:#fff!important;padding:10px 12px!important;}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--primary)!important;box-shadow:0 0 0 3px rgba(31,122,92,.10)!important;}
+h1,h2,h3{letter-spacing:-.02em;}
+.siasem-class-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:#e7f4ee;color:#14543f;font-weight:700;font-size:12px;}
+.siasem-pra-nikah{background:linear-gradient(135deg,#fff8e8,#fff1c9)!important;border-color:#efd18a!important;}
+#login-page{background:radial-gradient(circle at top right,#dff2e8 0%,transparent 35%),linear-gradient(135deg,#f4f8f6,#e7f2ed)!important;}
+</style>
+
+
+<style id="siasem-cloud-fix">
+#siasem-cloud-open {
+  display:block !important;
+  position:relative !important;
+  z-index:99999 !important;
+  pointer-events:auto !important;
+  cursor:pointer !important;
+  width:100%;
+  margin:12px 0;
+  padding:12px 16px;
+  border:1px solid #cfd8dc;
+  border-radius:12px;
+  background:#ffffff;
+  color:#1f2937;
+  font-size:15px;
+  font-weight:600;
+}
+</style>
+
+</head>
+<body>
+
+    <!-- ================= LOGIN PAGE ================= -->
+    <div id="login-page" class="motif-bg">
+        <div class="login-box">
+            <div class="login-logo">🌙</div>
+            <span class="login-tag">Generus</span>
+            <h2>SIASEM</h2>
+            <p class="desc">Sistem Informasi Absensi &amp; Kendali Generus — kelola Absensi, Jurnal Mengajar, dan Buku Kendali 29 Karakter dalam satu tempat.</p>
+            <div id="login-error" class="error-msg">Username atau Password salah!</div>
+            <input type="text" id="login-username" placeholder="Username">
+            <input type="password" id="login-password" placeholder="Password">
+            <div class="cf-turnstile" data-sitekey="0x4AAAAAAESHOiCYIMO0TCDO" style="margin-bottom:13px;"></div>
+            <button onclick="doLogin()">Masuk</button>
+            <button id="siasem-cloud-open" type="button" style="margin-top:12px;width:100%;cursor:pointer;position:relative;z-index:100001;" onclick="openPreloginCloud();">☁️ Pengaturan Google Apps Script</button>
+            
+            <div id="prelogin-cloud-status" style="margin-top:10px;font-size:12px;color:#66736d;"></div>
+            
+        </div>
+    </div>
+
+    <!-- ================= MAIN APP ================= -->
+    <div id="main-app" style="display:none;">
+
+        <header class="app-header motif-bg no-print">
+            <div class="header-left">
+                <div class="header-logo">🌙</div>
+                <div>
+                    <h1 id="user-greeting">Halo, Guru</h1>
+                    <div class="sub">SIASEM · Sistem Informasi Absensi Generus</div>
+                </div>
+                <span id="cloud-status" class="sync-status">Offline Mode</span>
+            </div>
+            <button class="btn-logout" onclick="doLogout()">Logout</button>
+        </header>
+
+        <div class="container">
+
+            <!-- MODULE 1: ABSENSI -->
+            <div id="mod-absensi" class="app-module active">
+                <div class="top-tabs no-print">
+                    <button class="top-tab-btn active" onclick="switchSubTab('absensi', 'input')">INPUT ABSEN</button>
+                    <button class="top-tab-btn" onclick="switchSubTab('absensi', 'laporan')">LAPORAN</button>
+                    <button class="top-tab-btn" onclick="switchSubTab('absensi', 'kelola')">KELOLA GENERUS</button>
+                </div>
+
+                <div id="absensi-input" class="sub-section active no-print">
+                    <div id="alert-absensi" class="alert">✅ Absensi berhasil disimpan (dan di-sync ke Cloud)!</div>
+                    <div class="card">
+                        <div class="form-group">
+                            <label>Tanggal</label>
+                            <input type="date" id="abs-tanggal" onchange="renderAbsensiInput()">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Kelas</label>
+                            <select id="abs-kelas" onchange="renderAbsensiInput()">
+                                <option value="caberawit">Caberawit</option>
+                                <option value="praremaja">Pra Remaja</option>
+                                <option value="remaja">Remaja</option>
+                            
+<option value="Pra Nikah">Pra Nikah</option>
+</select>
+                        </div>
+                    </div>
+                    <form id="formAbsensi" onsubmit="simpanAbsensi(event)">
+                        <div class="card" style="padding: 10px 15px;">
+                            <div id="abs-input-list"></div>
+                        </div>
+                        <button type="submit" class="btn btn-save" id="btn-save-absensi">💾 Simpan Absensi</button>
+                    </form>
+                </div>
+
+                <div id="absensi-laporan" class="sub-section">
+                    <div class="card no-print">
+                        <div class="form-group">
+                            <label>Bulan</label>
+                            <input type="month" id="abs-bulan" onchange="renderAbsensiLaporan()">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Kelas</label>
+                            <select id="abs-kelas-lap" onchange="renderAbsensiLaporan()">
+                                <option value="caberawit">Caberawit</option>
+                                <option value="praremaja">Pra Remaja</option>
+                                <option value="remaja">Remaja</option>
+                            
+<option value="Pra Nikah">Pra Nikah</option>
+</select>
+                        </div>
+                    </div>
+                    <button class="btn btn-print no-print" onclick="window.print()">🖨️ Cetak Laporan Kehadiran</button>
+                    <div class="print-header"><h2>LAPORAN KEHADIRAN GENERUS</h2><p id="print-abs-info"></p></div>
+                    <div class="card">
+                        <p class="no-print" style="font-size:13px; font-weight:700; color:var(--text-muted);">Total Hari Belajar: <span id="abs-total-hari" style="color:var(--primary-dark);">0</span> hari</p>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr><th>Nama Generus</th><th class="text-center">H</th><th class="text-center">S</th><th class="text-center">I</th><th class="text-center">A</th><th width="30%">Kehadiran (%)</th></tr>
+                                </thead>
+                                <tbody id="abs-tbody-laporan"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="absensi-kelola" class="sub-section no-print">
+                    <div class="card">
+                        <div class="form-group">
+                            <label>Pilih Kelas</label>
+                            <select id="abs-kelas-kelola" onchange="renderKelolaMurid()">
+                                <option value="caberawit">Caberawit</option>
+                                <option value="praremaja">Pra Remaja</option>
+                                <option value="remaja">Remaja</option>
+                            
+<option value="Pra Nikah">Pra Nikah</option>
+</select>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="abs-nama-baru" placeholder="Nama generus baru..." style="flex:1;">
+                            <button type="button" class="btn" style="width:auto;" onclick="tambahMurid()">Tambah</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th width="10%">No</th><th width="70%">Nama Generus</th><th width="20%">Aksi</th></tr></thead>
+                                <tbody id="abs-tbody-kelola"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 2: JURNAL -->
+            <div id="mod-jurnal" class="app-module">
+                <div class="top-tabs no-print">
+                    <button class="top-tab-btn active" onclick="switchSubTab('jurnal', 'input')">ISI JURNAL</button>
+                    <button class="top-tab-btn" onclick="switchSubTab('jurnal', 'riwayat')">RIWAYAT & CETAK</button>
+                </div>
+
+                <div id="jurnal-input" class="sub-section active no-print">
+                    <div id="alert-jurnal" class="alert">✅ Jurnal berhasil disimpan (dan di-sync ke Cloud)!</div>
+                    <form id="formJurnal" onsubmit="simpanJurnal(event)">
+                        <div class="card">
+                            <div class="form-group">
+                                <label>Hari dan Tanggal</label>
+                                <input type="date" id="jur-tanggal" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Kelas</label>
+                                <select id="jur-kelas" required>
+                                    <option value="Caberawit">Caberawit</option>
+                                    <option value="Pra Remaja">Pra Remaja</option>
+                                    <option value="Remaja">Remaja</option>
+                                    <option value="Gabungan">Gabungan</option>
+                                
+<option value="Pra Nikah">Pra Nikah</option>
+</select>
+                            </div>
+                            <div class="form-group">
+                                <label>Materi yang Diajarkan</label>
+                                <textarea id="jur-materi" placeholder="Tuliskan ringkasan materi..." required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Generus Tidak Hadir</label>
+                                <input type="text" id="jur-absen" placeholder="Contoh: Budi (S), Ani (I) atau '-'" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Nama Guru</label>
+                                <input type="text" id="jur-guru" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-save">💾 Simpan Jurnal</button>
+                    </form>
+                </div>
+
+                <div id="jurnal-riwayat" class="sub-section">
+                    <div class="card no-print">
+                        <div class="filter-grid">
+                            <div class="form-group" style="margin-bottom:0;"><label>Bulan:</label><input type="month" id="jur-filter-bulan" onchange="renderJurnalRiwayat()"></div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Kelas:</label>
+                                <select id="jur-filter-kelas" onchange="renderJurnalRiwayat()">
+                                    <option value="">Semua Kelas</option><option value="Caberawit">Caberawit</option>
+                                    <option value="Pra Remaja">Pra Remaja</option><option value="Remaja">Remaja</option><option value="Gabungan">Gabungan</option>
+                                
+<option value="Pra Nikah">Pra Nikah</option>
+</select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;"><label>Nama Guru:</label><input type="text" id="jur-filter-guru" placeholder="Cari nama guru..." onkeyup="renderJurnalRiwayat()"></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-print no-print" onclick="window.print()">🖨️ Cetak Buku Jurnal</button>
+                    <div class="print-header"><h2>JURNAL MENGAJAR GURU</h2><p id="print-jur-info"></p></div>
+                    <div class="card" style="padding:0;">
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th width="12%">Tanggal</th><th width="12%">Kelas</th><th width="35%">Materi</th><th width="15%">Tdk Hadir</th><th width="15%">TTD & Guru</th><th width="5%" class="col-aksi no-print">Aksi</th></tr></thead>
+                                <tbody id="jur-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 3: KENDALI -->
+            <div id="mod-kendali" class="app-module">
+                <div class="top-tabs no-print">
+                    <button class="top-tab-btn active" onclick="switchSubTab('kendali', 'input')">INPUT KENDALI</button>
+                    <button class="top-tab-btn" onclick="switchSubTab('kendali', 'riwayat')">RIWAYAT</button>
+                </div>
+
+                <div id="kendali-input" class="sub-section active no-print">
+                    <div id="alert-kendali" class="alert">✅ Laporan kendali berhasil disimpan (dan di-sync ke Cloud)!</div>
+                    <form id="formKendali" onsubmit="simpanKendali(event)">
+                        <div class="card">
+                            <div class="form-group">
+                                <label>Tanggal</label>
+                                <input type="date" id="ken-tanggal" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Kelas</label>
+                                <select id="ken-kelas" required>
+                                    <option value="PAUD">PAUD</option><option value="Caberawit">Caberawit</option>
+                                    <option value="Pra Remaja">Pra Remaja</option><option value="Remaja">Remaja</option><option value="Semua Kelas">Semua Kelas</option>
+                                
+<option value="Pra Nikah">Pra Nikah</option>
+</select>
+                            </div>
+                            <div class="form-group">
+                                <label>Fokus Karakter</label>
+                                <select id="ken-karakter" required>
+                                    <option value="" disabled selected>-- Pilih Karakter --</option>
+                                    <option value="Alim Faqih">1. Alim Faqih</option>
+                                    <option value="Akhlaqul Karimah">2. Akhlaqul Karimah</option>
+                                    <option value="Mandiri">3. Mandiri</option>
+                                    <option value="Rukun">4. Rukun</option>
+                                    <option value="Kompak">5. Kompak</option>
+                                    <option value="Kerja Sama yang Baik">6. Kerja Sama yang Baik</option>
+                                    <option value="Jujur">7. Jujur</option>
+                                    <option value="Amanah">8. Amanah</option>
+                                    <option value="Mujhid Muzhid">9. Mujhid Muzhid</option>
+                                    <option value="Bersyukur">10. Bersyukur</option>
+                                    <option value="Mengagungkan">11. Mengagungkan</option>
+                                    <option value="Mempersungguh">12. Mempersungguh</option>
+                                    <option value="Berdoa">13. Berdoa</option>
+                                    <option value="Benar">14. Benar</option>
+                                    <option value="Kurup">15. Kurup</option>
+                                    <option value="Janji">16. Janji</option>
+                                    <option value="Diqodar Nikmat Maka Bersyukur">17. Diqodar Nikmat Maka Bersyukur</option>
+                                    <option value="Diqodar Musibah Maka Istirja">18. Diqodar Musibah Maka Istirja</option>
+                                    <option value="Diqodar Cobaan Maka Sabar">19. Diqodar Cobaan Maka Sabar</option>
+                                    <option value="Diqodar Salah Maka Bertaubat">20. Diqodar Salah Maka Bertaubat</option>
+                                    <option value="Yang Kuat Membantu yang Lemah">21. Yang Kuat Membantu yang Lemah</option>
+                                    <option value="Yang Bisa Mengajar yang Tidak Bisa">22. Yang Bisa Mengajar yang Tidak Bisa</option>
+                                    <option value="Yang Lupa Diingatkan">23. Yang Lupa Diingatkan</option>
+                                    <option value="Yang Salah Dinasehati dan Diarahkan Bertaubat">24. Yang Salah Dinasehati dan Diarahkan Bertaubat</option>
+                                    <option value="Bicara yang Baik, Pahit Madu, Papan Empan Adepan">25. Bicara yang Baik, Pahit Madu, Papan Empan Adepan</option>
+                                    <option value="Jujur, Percaya dan Dipercaya">26. Jujur, Percaya dan Dipercaya</option>
+                                    <option value="Sabar, Keporo Ngalah, Rebutan Ngalah">27. Sabar, Keporo Ngalah, Rebutan Ngalah</option>
+                                    <option value="Tidak Merusak Sesama Jamaah">28. Tidak Merusak Sesama Jamaah</option>
+                                    <option value="Menjaga Perasaan dan Kehormatan">29. Menjaga Perasaan dan Kehormatan</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label>Bentuk Kegiatan / Penerapan</label><textarea id="ken-kegiatan" placeholder="Contoh: Menata sandal, nasehat..." required></textarea></div>
+                            <div class="form-group"><label>Status Pelaksanaan</label><select id="ken-status" required><option value="Terlaksana Baik">Terlaksana Baik</option><option value="Sebagian/Kurang">Sebagian / Kurang</option><option value="Belum Terlaksana">Belum Terlaksana</option></select></div>
+                            <div class="form-group"><label>Evaluasi (Opsional)</label><textarea id="ken-evaluasi" placeholder="Catatan..."></textarea></div>
+                            <div class="form-group" style="margin-bottom:0;"><label>Nama Guru</label><input type="text" id="ken-guru" required></div>
+                        </div>
+                        <button type="submit" class="btn btn-save">💾 Simpan Buku Kendali</button>
+                    </form>
+                </div>
+
+                <div id="kendali-riwayat" class="sub-section">
+                    <div class="card no-print">
+                        <div class="filter-grid">
+                            <div class="form-group" style="margin-bottom:0;"><label>Bulan:</label><input type="month" id="ken-filter-bulan" onchange="renderKendaliRiwayat()"></div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Kelas:</label>
+                                <select id="ken-filter-kelas" onchange="renderKendaliRiwayat()">
+                                    <option value="PAUD">PAUD</option>
+                                    <option value="Caberawit">Caberawit</option>
+                                    <option value="Pra Remaja">Pra Remaja</option>
+                                    <option value="Remaja">Remaja</option>
+                                    <option value="Semua Kelas">Semua Kelas</option>
+                                    <option value="Pra Nikah">Pra Nikah</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;"><label>Nama Guru:</label><input type="text" id="ken-filter-guru" placeholder="Cari nama guru..." onkeyup="renderKendaliRiwayat()"></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-print no-print" onclick="window.print()">🖨️ Cetak Buku Kendali</button>
+                    <div class="print-header"><h2>BUKU KENDALI PROGRAM 29 KARAKTER</h2><p id="print-ken-info"></p></div>
+                    <div class="card" style="padding:0;">
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th width="12%">Tanggal</th><th width="10%">Kelas</th><th width="20%">Fokus</th><th width="30%">Kegiatan & Eval</th><th width="12%">Status</th><th width="11%">Guru</th><th width="5%" class="col-aksi no-print">Aksi</th></tr></thead>
+                                <tbody id="ken-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 4: SETTINGS (CLOUD SYNC) -->
+            <div id="mod-setting" class="app-module no-print">
+                <div class="card">
+                    <h3 style="margin-top:0; color:var(--primary-dark); display:flex; align-items:center; gap:8px;">☁️ Pengaturan Sinkronisasi Google Sheets</h3>
+                    <p class="settings-note">Masukkan URL Web App dari Google Apps Script Anda agar data absensi, jurnal, dan kendali generus otomatis tersimpan ke Google Spreadsheet secara online.</p>
+
+                    <div class="form-group">
+                        <label>URL Google Apps Script Web App</label>
+                        <input type="text" id="set-script-url" placeholder="https://script.google.com/macros/s/.../exec">
+                    </div>
+                    <button class="btn btn-sync" onclick="saveSettings()">🔗 Simpan & Hubungkan</button>
+                    
+                    <div id="alert-setting" class="alert" style="margin-top:15px; display:none;">✅ URL berhasil disimpan! Fitur sinkronisasi aktif.</div>
+                </div>
+            </div>
+
+            <!-- MODULE 5: USER MANAGEMENT (ADMIN ONLY) -->
+            <div id="mod-users" class="app-module no-print">
+                <div class="card">
+                    <h3 style="margin-top:0; color:var(--primary-dark); display:flex; align-items:center; gap:8px;">👤 Tambah User</h3>
+                    <p class="settings-note">Hanya admin yang bisa membuat, menonaktifkan, atau mereset password akun guru/admin.</p>
+
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="usr-username" placeholder="mis. budi.guru">
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Lengkap</label>
+                        <input type="text" id="usr-nama" placeholder="Nama lengkap">
+                    </div>
+                    <div class="form-group">
+                        <label>Password Awal (min. 8 karakter)</label>
+                        <input type="password" id="usr-password" placeholder="Password awal">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Role</label>
+                        <select id="usr-role">
+                            <option value="guru">Guru</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-sync" style="margin-top:15px;" onclick="submitCreateUser()">➕ Tambah User</button>
+                    <div id="alert-users" class="alert" style="margin-top:15px; display:none;"></div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-top:0; color:var(--primary-dark);">📋 Daftar User</h3>
+                    <button class="btn" onclick="loadUserList()" style="margin-bottom:12px; width:auto; padding:9px 16px;">🔄 Muat Daftar User</button>
+                    <table>
+                        <thead><tr><th>Username</th><th>Nama</th><th>Role</th><th class="text-center">Status</th><th class="col-aksi">Aksi</th></tr></thead>
+                        <tbody id="usr-tbody"><tr><td colspan="5" class="text-center">Klik "Muat Daftar User".</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <nav class="bottom-nav no-print">
+            <div class="nav-item active" onclick="switchModule('absensi', this)"><i>📋</i>Absensi</div>
+            <div class="nav-item" onclick="switchModule('jurnal', this)"><i>📖</i>Jurnal</div>
+            <div class="nav-item" onclick="switchModule('kendali', this)"><i>📘</i>Kendali</div>
+            <div class="nav-item" id="nav-users" style="display:none;" onclick="openUsersGuarded(this)"><i>👤</i>User</div>
+            <div class="nav-item" onclick="openSettingsGuarded(this)"><i>⚙️</i>Cloud</div>
+        </nav>
+    </div>
+
+    <script>
+        // Kredensial pengguna tidak disimpan di HTML. Login diverifikasi oleh Google Apps Script.
+
+        // Semua data (murid, absensi, jurnal, kendali) TIDAK disimpan di localStorage.
+        // Data ini hanya hidup di memori selama tab dibuka, dan selalu diambil
+        // ulang dari Google Sheets lewat loadAppData() setelah login.
+        let dbMurid = { caberawit: [], praremaja: [], remaja: [] };
+        let dbAbsensi = {};
+        let dbJurnal = [];
+        let dbKendali = [];
+
+        // Sesi login juga TIDAK disimpan di localStorage. Setiap kali halaman
+        // dibuka/refresh, pengguna wajib login ulang.
+        let currentUser = null;
+        let currentRole = null;
+        // Password disimpan HANYA di memori (bukan di disk) supaya request
+        // baca/tulis data berikutnya (getAppData, saveAbsensi, dst) bisa
+        // diautentikasi ulang oleh server tanpa perlu menyimpan sesi.
+        let sessionAuth = null;
+        // Nama guru terakhir dipakai, hanya di memori (bukan localStorage) -
+        // isinya hilang saat halaman di-refresh.
+        let lastGuruName = '';
+
+        // URL Google Apps Script bawaan aplikasi (tertanam di kode, otomatis tersambung
+        // di device manapun, dan TIDAK disimpan/dibaca dari localStorage).
+        const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxotvhSpgCQhn-XWsVhRDZKPKwuFXWE9epLjBsZCbmLMn1oYhIV8O_BwPmuvOXrJGM6/exec';
+        let scriptUrl = DEFAULT_SCRIPT_URL;
+        const API_TOKEN = 'SIASEM-2026';
+
+        // GANTI PIN INI dengan PIN rahasia Anda sendiri sebelum dipakai.
+        // Hanya orang yang tahu PIN ini yang boleh mengubah URL Google Apps Script.
+        const SETTINGS_PIN = '170717';
+
+        // ============ AUTO LOGOUT KARENA TIDAK AKTIF ============
+        // Default: logout otomatis setelah 30 menit tanpa aktivitas.
+        // Timer ini hanya berlaku untuk tab yang sedang terbuka (di memori),
+        // tidak lagi disinkronkan lewat localStorage antar-tab.
+        const AUTO_LOGOUT_MINUTES = 30;
+        const AUTO_LOGOUT_MS = AUTO_LOGOUT_MINUTES * 60 * 1000;
+        const AUTO_LOGOUT_WARNING_MS = 60 * 1000;
+        let autoLogoutTimer = null;
+        let autoLogoutWarningTimer = null;
+        let lastActivityAt = 0;
+
+        function updateLastActivity() {
+            if (!currentUser) return;
+            lastActivityAt = Date.now();
+        }
+
+        function scheduleAutoLogout() {
+            clearTimeout(autoLogoutTimer);
+            clearTimeout(autoLogoutWarningTimer);
+
+            if (!currentUser) return;
+
+            lastActivityAt = Date.now();
+
+            autoLogoutWarningTimer = setTimeout(function () {
+                if (currentUser) {
+                    alert('⚠️ Sesi akan logout otomatis dalam 1 menit karena tidak ada aktivitas.');
+                }
+            }, AUTO_LOGOUT_MS - AUTO_LOGOUT_WARNING_MS);
+
+            autoLogoutTimer = setTimeout(function () {
+                autoLogout(true);
+            }, AUTO_LOGOUT_MS);
+        }
+
+        function autoLogout(showMessage) {
+            if (!currentUser) return;
+
+            clearTimeout(autoLogoutTimer);
+            clearTimeout(autoLogoutWarningTimer);
+
+            currentUser = null;
+            currentRole = null;
+            sessionAuth = null;
+            adminAuthCache = null;
+            dbMurid = { caberawit: [], praremaja: [], remaja: [] };
+            dbAbsensi = {};
+            dbJurnal = [];
+            dbKendali = [];
+
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('login-page').style.display = 'flex';
+
+            const u = document.getElementById('login-username');
+            const p = document.getElementById('login-password');
+            if (u) u.value = '';
+            if (p) p.value = '';
+
+            if (showMessage) {
+                alert('🔒 Anda telah logout otomatis karena tidak ada aktivitas selama ' + AUTO_LOGOUT_MINUTES + ' menit.');
+            }
+        }
+
+        function initAutoLogout() {
+            const activityEvents = ['click', 'keydown', 'mousemove', 'mousedown', 'touchstart', 'scroll'];
+
+            activityEvents.forEach(function (eventName) {
+                document.addEventListener(eventName, function () {
+                    updateLastActivity();
+                }, { passive: true });
+            });
+        }
+
+        function verifySettingsPin() {
+            const pin = prompt('Masukkan PIN admin untuk membuka Pengaturan Google Apps Script:');
+            if (pin === null) return false; // batal
+            if (pin.trim() !== SETTINGS_PIN) {
+                alert('❌ PIN salah. Anda tidak diizinkan mengubah pengaturan ini.');
+                return false;
+            }
+            return true;
+        }
+
+        function openSettingsGuarded(navEl) {
+            if (!verifySettingsPin()) return;
+            switchModule('setting', navEl);
+        }
+
+        // --- MANAJEMEN USER (ADMIN ONLY) ---
+        let adminAuthCache = null; // {username, password} - hanya di memori, tidak disimpan ke disk
+
+        function openUsersGuarded(navEl) {
+            if (currentRole !== 'admin') {
+                alert('❌ Hanya admin yang bisa mengakses Manajemen User.');
+                return;
+            }
+            if (!adminAuthCache) {
+                const pw = prompt('Konfirmasi password admin Anda untuk membuka Manajemen User:');
+                if (pw === null) return;
+                adminAuthCache = { username: currentUser, password: pw };
+            }
+            switchModule('users', navEl);
+        }
+
+        async function callAdminAction(action, extraFields) {
+            if (!scriptUrl) { alert('URL Google Apps Script belum diatur.'); return null; }
+            if (!adminAuthCache) { alert('Sesi admin belum terverifikasi. Buka ulang menu User.'); return null; }
+            try {
+                const body = Object.assign({
+                    token: API_TOKEN,
+                    action: action,
+                    adminUsername: adminAuthCache.username,
+                    adminPassword: adminAuthCache.password
+                }, extraFields || {});
+                const res = await fetch(scriptUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+                    body: JSON.stringify(body)
+                });
+                const result = await res.json();
+                if (!result.ok) {
+                    alert('❌ ' + (result.error || 'Gagal memproses permintaan.'));
+                    if (/autentikasi|admin/i.test(result.error || '')) adminAuthCache = null;
+                    return null;
+                }
+                return result;
+            } catch (e) {
+                console.error(e);
+                alert('Gagal terhubung ke server.');
+                return null;
+            }
+        }
+
+        async function submitCreateUser() {
+            const username = document.getElementById('usr-username').value.trim();
+            const nama = document.getElementById('usr-nama').value.trim();
+            const password = document.getElementById('usr-password').value;
+            const role = document.getElementById('usr-role').value;
+
+            if (!username || !nama || !password) { alert('Lengkapi semua field.'); return; }
+
+            const result = await callAdminAction('createUser', { newUsername: username, newPassword: password, newNama: nama, newRole: role });
+            if (result) {
+                document.getElementById('usr-username').value = '';
+                document.getElementById('usr-nama').value = '';
+                document.getElementById('usr-password').value = '';
+                const al = document.getElementById('alert-users');
+                al.innerText = '✅ ' + result.message;
+                showAlert('alert-users');
+                loadUserList();
+            }
+        }
+
+        async function loadUserList() {
+            const result = await callAdminAction('listUsers', {});
+            const tbody = document.getElementById('usr-tbody');
+            if (!result) return;
+            const users = result.users || [];
+            if (users.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="text-center">Belum ada user.</td></tr>'; return; }
+            tbody.innerHTML = '';
+            users.forEach(function(u) {
+                const aktif = String(u.aktif).toUpperCase() === 'YA';
+                tbody.innerHTML += `<tr>
+                    <td>${u.username}</td>
+                    <td>${u.nama}</td>
+                    <td>${u.role}</td>
+                    <td class="text-center"><span class="badge ${aktif ? 'badge-success' : 'badge-danger'}">${aktif ? 'Aktif' : 'Nonaktif'}</span></td>
+                    <td class="col-aksi">
+                        <button class="btn-danger" onclick="toggleUserActive('${u.username}', ${aktif})">${aktif ? 'Nonaktifkan' : 'Aktifkan'}</button>
+                        <button onclick="promptChangePassword('${u.username}')">Reset PW</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        async function toggleUserActive(username, currentlyActive) {
+            if (!confirm((currentlyActive ? 'Nonaktifkan' : 'Aktifkan') + ' user ' + username + '?')) return;
+            const result = await callAdminAction('setUserActive', { targetUsername: username, active: !currentlyActive });
+            if (result) loadUserList();
+        }
+
+        async function promptChangePassword(username) {
+            const newPw = prompt('Masukkan password baru untuk ' + username + ' (min. 8 karakter):');
+            if (!newPw) return;
+            if (newPw.length < 8) { alert('Password minimal 8 karakter.'); return; }
+            const result = await callAdminAction('changePassword', { targetUsername: username, newPassword: newPw });
+            if (result) alert('✅ Password berhasil diubah.');
+        }
+
+        window.onload = function() {
+            document.getElementById('login-page').style.display = 'flex';
+
+            document.getElementById('set-script-url').value = scriptUrl;
+            const preStatus = document.getElementById('prelogin-cloud-status');
+            if (preStatus) preStatus.textContent = scriptUrl ? '☁️ URL Google Apps Script sudah tersimpan' : '☁️ Belum terhubung';
+            checkCloudStatus();
+            initAutoLogout();
+        };
+
+        async function loadAppData() {
+            if (!scriptUrl || !sessionAuth) return false;
+            try {
+                const response = await fetch(scriptUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+                    body: JSON.stringify({
+                        token: API_TOKEN,
+                        action: 'getAppData',
+                        authUsername: sessionAuth.username,
+                        authPassword: sessionAuth.password
+                    })
+                });
+                const result = await response.json();
+                if (result.ok && result.data) {
+                    dbMurid = result.data.murid || { caberawit: [], praremaja: [], remaja: [] };
+                    dbAbsensi = result.data.absensi || {};
+                    dbJurnal = result.data.jurnal || [];
+                    dbKendali = result.data.kendali || [];
+                    return true;
+                } else {
+                    alert('Gagal memuat data dari Google Sheets: ' + (result.error || 'Tidak diketahui'));
+                    return false;
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Gagal terhubung ke Google Sheets untuk memuat data.');
+                return false;
+            }
+        }
+
+        async function doLogin() {
+            const uEl = document.getElementById('login-username');
+            const pEl = document.getElementById('login-password');
+            const err = document.getElementById('login-error');
+
+            const username = uEl ? uEl.value.trim() : '';
+            const password = pEl ? pEl.value : '';
+
+            if (err) err.style.display = 'none';
+
+            if (!username || !password) {
+                if (err) {
+                    err.textContent = 'Username dan password wajib diisi.';
+                    err.style.display = 'block';
+                }
+                return;
+            }
+
+            if (!scriptUrl) {
+                if (err) {
+                    err.textContent = 'Hubungkan SIASEM ke Google Apps Script terlebih dahulu.';
+                    err.style.display = 'block';
+                }
+                return;
+            }
+
+            const turnstileToken = (typeof turnstile !== 'undefined') ? turnstile.getResponse() : '';
+            if (!turnstileToken) {
+                if (err) {
+                    err.textContent = 'Selesaikan verifikasi keamanan terlebih dahulu.';
+                    err.style.display = 'block';
+                }
+                return;
+            }
+
+            try {
+                const response = await fetch(scriptUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+                    body: JSON.stringify({
+                        token: API_TOKEN,
+                        action: 'login',
+                        username: username,
+                        password: password,
+                        turnstileToken: turnstileToken
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.ok && result.authenticated) {
+                    currentUser = result.username || username;
+                    currentRole = result.role || 'guru';
+                    sessionAuth = { username: currentUser, password: password };
+
+                    const loaded = await loadAppData();
+                    if (!loaded) return; // pesan error sudah ditampilkan loadAppData()
+
+                    scheduleAutoLogout();
+                    showApp();
+                } else {
+                    if (typeof turnstile !== 'undefined') turnstile.reset();
+                    if (err) {
+                        err.textContent = result.error || 'Username atau password salah.';
+                        err.style.display = 'block';
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                if (typeof turnstile !== 'undefined') turnstile.reset();
+                if (err) {
+                    err.textContent = 'Gagal terhubung ke server login. Periksa URL Web App /exec.';
+                    err.style.display = 'block';
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const userInput = document.getElementById('login-username');
+            const passInput = document.getElementById('login-password');
+            [userInput, passInput].forEach(function (input) {
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') doLogin();
+                });
+            });
+        });
+        function doLogout() {
+            clearTimeout(autoLogoutTimer);
+            clearTimeout(autoLogoutWarningTimer);
+            currentUser = null;
+            currentRole = null;
+            sessionAuth = null;
+            adminAuthCache = null;
+            dbMurid = { caberawit: [], praremaja: [], remaja: [] };
+            dbAbsensi = {};
+            dbJurnal = [];
+            dbKendali = [];
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('login-page').style.display = 'flex';
+
+            const u = document.getElementById('login-username');
+            const p = document.getElementById('login-password');
+            if (u) u.value = '';
+            if (p) p.value = '';
+        }
+
+        function showApp() {
+            document.getElementById('login-page').style.display = 'none'; document.getElementById('main-app').style.display = 'block';
+            document.getElementById('user-greeting').innerText = `Halo, ${currentUser.toUpperCase()}`;
+
+            const navUsers = document.getElementById('nav-users');
+            if (navUsers) navUsers.style.display = (currentRole === 'admin') ? '' : 'none';
+            
+            const today = new Date(); const dateStr = today.toISOString().split('T')[0]; const monthStr = dateStr.substring(0, 7);
+            document.getElementById('abs-tanggal').value = dateStr; document.getElementById('abs-bulan').value = monthStr;
+            document.getElementById('jur-tanggal').value = dateStr; document.getElementById('jur-filter-bulan').value = monthStr;
+            document.getElementById('ken-tanggal').value = dateStr; document.getElementById('ken-filter-bulan').value = monthStr;
+
+            document.getElementById('jur-guru').value = lastGuruName || '';
+            document.getElementById('ken-guru').value = lastGuruName || '';
+            renderAbsensiInput();
+        }
+
+        function switchModule(modId, navEl) {
+            document.querySelectorAll('.app-module').forEach(m => m.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('mod-' + modId).classList.add('active');
+            navEl.classList.add('active');
+            const firstTabBtn = document.getElementById('mod-' + modId).querySelector('.top-tab-btn');
+            if(firstTabBtn) firstTabBtn.click();
+        }
+        function switchSubTab(mod, sub) {
+            const parent = document.getElementById(`mod-${mod}`);
+            parent.querySelectorAll('.top-tab-btn').forEach(b => b.classList.remove('active'));
+            parent.querySelectorAll('.sub-section').forEach(s => s.classList.remove('active'));
+            parent.querySelectorAll('.top-tab-btn').forEach(b => { if(b.getAttribute('onclick').includes(sub)) b.classList.add('active'); });
+            document.getElementById(`${mod}-${sub}`).classList.add('active');
+            if(mod==='absensi'&&sub==='input') renderAbsensiInput(); if(mod==='absensi'&&sub==='laporan') renderAbsensiLaporan();
+            if(mod==='absensi'&&sub==='kelola') renderKelolaMurid(); if(mod==='jurnal'&&sub==='riwayat') renderJurnalRiwayat();
+            if(mod==='kendali'&&sub==='riwayat') renderKendaliRiwayat();
+        }
+
+        function formatTgl(ds) { const d = new Date(ds); if(isNaN(d)) return ds; return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; }
+        function formatBulan(ms) { if(!ms) return "Semua Bulan"; const m = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des']; const p = ms.split('-'); return `${m[parseInt(p[1])-1]} ${p[0]}`; }
+
+        // --- CLOUD SYNC LOGIC ---
+        function checkCloudStatus() {
+            const statusEl = document.getElementById('cloud-status');
+            if(scriptUrl && scriptUrl.startsWith('http')) {
+                statusEl.innerText = "☁️ Terhubung";
+                statusEl.classList.add('online');
+            } else {
+                statusEl.innerText = "Offline Mode";
+                statusEl.classList.remove('online');
+            }
+        }
+        
+        function openPreloginCloud() {
+            if (!verifySettingsPin()) return;
+            const modal = document.getElementById('prelogin-cloud-modal');
+            const input = document.getElementById('prelogin-script-url');
+            input.value = scriptUrl || '';
+            document.getElementById('prelogin-cloud-message').textContent = '';
+            modal.style.display = 'flex';
+        }
+
+        function closePreloginCloud() {
+            document.getElementById('prelogin-cloud-modal').style.display = 'none';
+        }
+
+        async function savePreloginCloud() {
+            if (!verifySettingsPin()) return;
+            const input = document.getElementById('prelogin-script-url');
+            const msg = document.getElementById('prelogin-cloud-message');
+            const url = input.value.trim();
+
+            if (!url || !url.startsWith('https://script.google.com/') || !url.endsWith('/exec')) {
+                msg.textContent = '❌ Masukkan URL Web App Google Apps Script yang benar dan berakhiran /exec.';
+                msg.style.color = '#b42318';
+                return;
+            }
+
+            scriptUrl = url;
+
+            msg.textContent = '✓ URL Google Apps Script diset untuk sesi ini. Silakan tutup dan login.';
+            msg.style.color = '#067647';
+            document.getElementById('prelogin-cloud-status').textContent = '☁️ URL Apps Script diset (sesi ini saja)';
+        }
+
+function saveSettings() {
+            if (!verifySettingsPin()) return;
+            scriptUrl = document.getElementById('set-script-url').value.trim();
+            checkCloudStatus();
+            document.getElementById('alert-setting').style.display = 'block';
+            setTimeout(() => document.getElementById('alert-setting').style.display = 'none', 3000);
+        }
+
+        // Panggilan terautentikasi untuk semua aksi baca/tulis data murid,
+        // absensi, jurnal, dan kendali. Password TIDAK disimpan ke disk,
+        // hanya dikirim dari variabel sessionAuth yang ada di memori.
+        async function callDataAction(action, extraFields) {
+            if (!scriptUrl) { alert('URL Google Apps Script belum diatur.'); return null; }
+            if (!sessionAuth) { alert('Sesi login tidak valid. Silakan login ulang.'); return null; }
+            try {
+                const body = Object.assign({
+                    token: API_TOKEN,
+                    action: action,
+                    authUsername: sessionAuth.username,
+                    authPassword: sessionAuth.password
+                }, extraFields || {});
+
+                const res = await fetch(scriptUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(body)
+                });
+                const result = await res.json();
+
+                if (!result.ok) {
+                    alert(result.error || 'Aksi gagal.');
+                    return null;
+                }
+                return result;
+            } catch (e) {
+                console.error(e);
+                alert('Gagal terhubung ke server.');
+                return null;
+            }
+        }
+
+        async function testCloudConnection() {
+            const url = document.getElementById('set-script-url').value.trim();
+
+            if(!url || !url.startsWith('http')) {
+                alert('Masukkan URL Google Apps Script Web App terlebih dahulu.');
+                return;
+            }
+
+            try {
+                const response = await fetch(url, { method: 'GET' });
+                const data = await response.json();
+
+                if(data && data.ok) {
+                    scriptUrl = url;
+                    checkCloudStatus();
+                    alert('✅ Koneksi Google Sheets berhasil.');
+                } else {
+                    alert('❌ Web App merespons, tetapi bukan API SIASEM.');
+                }
+            } catch (e) {
+                alert('⚠️ Tes GET diblokir browser atau URL salah. Coba Simpan & Hubungkan lalu login untuk menguji sinkronisasi.');
+            }
+        }
+
+        // --- ABSENSI ---
+        function renderAbsensiInput() {
+            const tgl = document.getElementById('abs-tanggal').value; const kls = document.getElementById('abs-kelas').value;
+            const container = document.getElementById('abs-input-list'); const btn = document.getElementById('btn-save-absensi');
+            container.innerHTML = ''; const list = dbMurid[kls] || []; const dataHariIni = (dbAbsensi[tgl] && dbAbsensi[tgl][kls]) ? dbAbsensi[tgl][kls] : {};
+            if(list.length === 0) { container.innerHTML = `<div style="text-align:center; padding:10px; color:#888;">Belum ada murid.</div>`; btn.style.display = 'none'; return; }
+            btn.style.display = 'block';
+            list.forEach((m, i) => {
+                const st = dataHariIni[m.id] || 'H';
+                container.innerHTML += `<div style="padding:10px 0; border-bottom:1px solid #eee;"><div style="font-weight:bold; margin-bottom:8px; font-size:14px;">${i+1}. ${m.nama}</div><div class="status-options"><label><input type="radio" name="abs_${m.id}" value="H" ${st==='H'?'checked':''}><span class="opt-h">H</span></label><label><input type="radio" name="abs_${m.id}" value="S" ${st==='S'?'checked':''}><span class="opt-s">S</span></label><label><input type="radio" name="abs_${m.id}" value="I" ${st==='I'?'checked':''}><span class="opt-i">I</span></label><label><input type="radio" name="abs_${m.id}" value="A" ${st==='A'?'checked':''}><span class="opt-a">A</span></label></div></div>`;
+            });
+        }
+        async function simpanAbsensi(e) {
+            e.preventDefault(); const tgl = document.getElementById('abs-tanggal').value; const kls = document.getElementById('abs-kelas').value;
+            const dataPerMurid = {};
+            let rekapString = "";
+            (dbMurid[kls]||[]).forEach(m => {
+                const c = document.querySelector(`input[name="abs_${m.id}"]:checked`);
+                if(c) {
+                    dataPerMurid[m.id] = c.value;
+                    rekapString += `${m.nama}: ${c.value} | `;
+                }
+            });
+
+            const result = await callDataAction('saveAbsensi', { tanggal: tgl, kelas: kls, dataPerMurid: dataPerMurid, rekapText: rekapString });
+            if (result) {
+                dbAbsensi = result.absensi || dbAbsensi;
+                showAlert('alert-absensi');
+            }
+        }
+        function renderAbsensiLaporan() {
+            const bln = document.getElementById('abs-bulan').value; const kls = document.getElementById('abs-kelas-lap').value;
+            const tbody = document.getElementById('abs-tbody-laporan'); tbody.innerHTML = '';
+            document.getElementById('print-abs-info').innerText = `Kelas: ${kls.toUpperCase()} | Periode: ${formatBulan(bln)}`;
+            const list = dbMurid[kls] || []; let hariBelajar = Object.keys(dbAbsensi).filter(t => t.startsWith(bln) && dbAbsensi[t][kls] && Object.keys(dbAbsensi[t][kls]).length > 0);
+            document.getElementById('abs-total-hari').innerText = hariBelajar.length;
+            if(hariBelajar.length === 0 || list.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="color:#888;">Tidak ada data.</td></tr>`; return; }
+            list.forEach(m => {
+                let r = {H:0, S:0, I:0, A:0}; hariBelajar.forEach(t => { const s = dbAbsensi[t][kls][m.id]; if(s) r[s]++; });
+                const pct = hariBelajar.length > 0 ? Math.round((r.H / hariBelajar.length)*100) : 0;
+                let c = pct >= 90 ? 'var(--success)' : (pct >= 75 ? 'var(--accent)' : 'var(--danger)');
+                tbody.innerHTML += `<tr><td><b>${m.nama}</b></td><td class="text-center">${r.H}</td><td class="text-center">${r.S}</td><td class="text-center">${r.I}</td><td class="text-center">${r.A}</td><td><div style="display:flex; justify-content:space-between; font-size:11px; font-weight:bold;"><span>${pct}%</span><span>${r.H}/${hariBelajar.length}</span></div><div class="progress-bar-container"><div class="progress-bar" style="width:${pct}%; background:${c}"></div></div></td></tr>`;
+            });
+        }
+        function renderKelolaMurid() {
+            const kls = document.getElementById('abs-kelas-kelola').value; const tbody = document.getElementById('abs-tbody-kelola');
+            tbody.innerHTML = ''; const list = dbMurid[kls] || [];
+            if(list.length === 0) { tbody.innerHTML=`<tr><td colspan="3" class="text-center">Belum ada murid.</td></tr>`; return; }
+            list.forEach((m, i) => { tbody.innerHTML += `<tr><td>${i+1}</td><td><b>${m.nama}</b></td><td><button class="btn-danger" onclick="hapusMurid('${kls}','${m.id}')">Hapus</button></td></tr>`; });
+        }
+        async function tambahMurid() {
+            const kls = document.getElementById('abs-kelas-kelola').value; const nama = document.getElementById('abs-nama-baru').value.trim();
+            if(!nama) return;
+            const result = await callDataAction('addMurid', { kelas: kls, nama: nama });
+            if (result) {
+                dbMurid = result.murid || dbMurid;
+                document.getElementById('abs-nama-baru').value = '';
+                renderKelolaMurid();
+            }
+        }
+        async function hapusMurid(kls, id) {
+            if(!confirm("Hapus murid ini?")) return;
+            const result = await callDataAction('deleteMurid', { id: id });
+            if (result) {
+                dbMurid = result.murid || dbMurid;
+                renderKelolaMurid();
+            }
+        }
+
+        // --- JURNAL ---
+        async function simpanJurnal(e) {
+            e.preventDefault(); const guru = document.getElementById('jur-guru').value;
+            const fields = { tgl: document.getElementById('jur-tanggal').value, kls: document.getElementById('jur-kelas').value, mat: document.getElementById('jur-materi').value, abs: document.getElementById('jur-absen').value, guru: guru };
+
+            const result = await callDataAction('saveJurnal', fields);
+            if (result && result.entry) {
+                dbJurnal.unshift(result.entry);
+                lastGuruName = guru;
+                document.getElementById('jur-materi').value = ''; document.getElementById('jur-absen').value = ''; showAlert('alert-jurnal');
+            }
+        }
+        function renderJurnalRiwayat() {
+            const bln = document.getElementById('jur-filter-bulan').value; const kls = document.getElementById('jur-filter-kelas').value; const guru = document.getElementById('jur-filter-guru').value.toLowerCase();
+            const tbody = document.getElementById('jur-tbody'); tbody.innerHTML = '';
+            let infoText = `Periode: ${formatBulan(bln)}`; if(kls) infoText += ` | Kelas: ${kls}`; document.getElementById('print-jur-info').innerText = infoText;
+            let list = dbJurnal; if(bln) list = list.filter(j => j.tgl.startsWith(bln)); if(kls) list = list.filter(j => j.kls === kls); if(guru) list = list.filter(j => j.guru.toLowerCase().includes(guru));
+            if(list.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="text-center">Tidak ada jurnal.</td></tr>`; return; }
+            list.forEach(j => { tbody.innerHTML += `<tr><td><b>${formatTgl(j.tgl)}</b></td><td>${j.kls}</td><td>${j.mat.replace(/\n/g, '<br>')}</td><td>${j.abs}</td><td><div style="height:25px;"></div><b>${j.guru}</b></td><td class="col-aksi"><button class="btn-danger" onclick="hapusJurnal('${j.id}')">Del</button></td></tr>`; });
+        }
+        async function hapusJurnal(id) {
+            if(!confirm("Hapus jurnal ini?")) return;
+            const result = await callDataAction('deleteJurnal', { id: id });
+            if (result) {
+                dbJurnal = dbJurnal.filter(j => j.id !== id);
+                renderJurnalRiwayat();
+            }
+        }
+
+        // --- KENDALI ---
+        async function simpanKendali(e) {
+            e.preventDefault(); const guru = document.getElementById('ken-guru').value;
+            const fields = { tgl: document.getElementById('ken-tanggal').value, kls: document.getElementById('ken-kelas').value, fokus: document.getElementById('ken-karakter').value, kegiatan: document.getElementById('ken-kegiatan').value, status: document.getElementById('ken-status').value, evaluasi: document.getElementById('ken-evaluasi').value || '-', guru: guru };
+
+            const result = await callDataAction('saveKendali', fields);
+            if (result && result.entry) {
+                dbKendali.unshift(result.entry);
+                lastGuruName = guru;
+                document.getElementById('ken-kegiatan').value = ''; document.getElementById('ken-evaluasi').value = ''; document.getElementById('ken-karakter').value = ''; showAlert('alert-kendali');
+            }
+        }
+        function renderKendaliRiwayat() {
+            const bln = document.getElementById('ken-filter-bulan').value; const kls = document.getElementById('ken-filter-kelas').value; const guru = document.getElementById('ken-filter-guru').value.toLowerCase();
+            const tbody = document.getElementById('ken-tbody'); tbody.innerHTML = '';
+            let infoText = `Periode: ${formatBulan(bln)}`; if(kls) infoText += ` | Kelas: ${kls}`; document.getElementById('print-ken-info').innerText = infoText;
+            let list = dbKendali; if(bln) list = list.filter(k => k.tgl.startsWith(bln)); if(kls) list = list.filter(k => k.kls === kls); if(guru) list = list.filter(k => k.guru.toLowerCase().includes(guru));
+            if(list.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="text-center">Tidak ada kendali.</td></tr>`; return; }
+            list.forEach(k => { let bc = k.status.includes('Baik') ? 'badge-success' : (k.status.includes('Belum') ? 'badge-danger' : 'badge-warning'); let ev = k.evaluasi !== '-' ? `<div style="margin-top:5px; padding-top:5px; border-top:1px dashed #ccc; font-size:11px;"><b>Eval:</b> ${k.evaluasi.replace(/\n/g,'<br>')}</div>` : ''; tbody.innerHTML += `<tr><td><b>${formatTgl(k.tgl)}</b></td><td>${k.kls}</td><td>${k.fokus}</td><td>${k.kegiatan.replace(/\n/g,'<br>')}${ev}</td><td><span class="badge ${bc}">${k.status}</span></td><td>${k.guru}</td><td class="col-aksi"><button class="btn-danger" onclick="hapusKendali('${k.id}')">Del</button></td></tr>`; });
+        }
+        async function hapusKendali(id) {
+            if(!confirm("Hapus kendali ini?")) return;
+            const result = await callDataAction('deleteKendali', { id: id });
+            if (result) {
+                dbKendali = dbKendali.filter(k => k.id !== id);
+                renderKendaliRiwayat();
+            }
+        }
+
+        function showAlert(id) { const el = document.getElementById(id); el.style.display = 'block'; window.scrollTo(0, 0); setTimeout(() => el.style.display = 'none', 3000); }
+    </script>
+
+<script id="siasem-pra-nikah-enhancement">
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('select').forEach(function(sel){
+    const label = (sel.id + ' ' + sel.name + ' ' + (sel.previousElementSibling ? sel.previousElementSibling.textContent : '')).toLowerCase();
+    if(label.includes('kelas') || label.includes('class')){
+      if(!Array.from(sel.options).some(o=>o.value==='Pra Nikah')){
+        const opt=document.createElement('option');
+        opt.value='Pra Nikah';
+        opt.textContent='Pra Nikah';
+        sel.appendChild(opt);
+      }
+      sel.addEventListener('change', function(){
+        sel.classList.toggle('siasem-pra-nikah', sel.value==='Pra Nikah');
+      });
+    }
+  });
+});
+</script>
+
+<script id="siasem-29-karakter-data">window.SIASEM_29_KARAKTER = ['Alim Faqih', 'Akhlaqul Karimah', 'Mandiri', 'Rukun', 'Kompak', 'Kerja Sama yang Baik', 'Jujur', 'Amanah', 'Mujhid Muzhid', 'Bersyukur', 'Mengagungkan', 'Mempersungguh', 'Berdoa', 'Benar', 'Kurup', 'Janji', 'Diqodar Nikmat Maka Bersyukur', 'Diqodar Musibah Maka Istirja', 'Diqodar Cobaan Maka Sabar', 'Diqodar Salah Maka Bertaubat', 'Yang Kuat Membantu yang Lemah', 'Yang Bisa Mengajar yang Tidak Bisa', 'Yang Lupa Diingatkan', 'Yang Salah Dinasehati dan Diarahkan Bertaubat', 'Bicara yang Baik, Pahit Madu, Papan Empan Adepan', 'Jujur, Percaya dan Dipercaya', 'Sabar, Keporo Ngalah, Rebutan Ngalah', 'Tidak Merusak Sesama Jamaah', 'Menjaga Perasaan dan Kehormatan'];</script>
+
+    <div id="prelogin-cloud-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:#fff;border-radius:18px;max-width:520px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+            <h3 style="margin-top:0;">☁️ Hubungkan Google Apps Script</h3>
+            <p style="font-size:13px;color:#66736d;">
+                Pengaturan ini tersedia <b>sebelum login</b> karena login SIASEM membutuhkan koneksi ke Google Apps Script.
+            </p>
+            <label style="display:block;margin:12px 0 6px;">URL Web App Google Apps Script</label>
+            <input id="prelogin-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #ccd7d1;border-radius:10px;">
+            <div id="prelogin-cloud-message" style="margin-top:10px;font-size:13px;"></div>
+            <div style="display:flex;gap:10px;margin-top:15px;">
+                <button type="button" onclick="savePreloginCloud()">Simpan & Tes</button>
+                <button type="button" onclick="closePreloginCloud()">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+
+
+</body>
+</html>
